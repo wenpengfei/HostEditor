@@ -52,7 +52,7 @@ namespace HostEditor
             string[] keys = GetConfigKeys();
             for (int i = 0; i < keys.Length; i++)
             {
-                GroupBox groubox = new GroupBox {Name = "groupbox" + i, Text = keys[i]};
+                GroupBox groubox = new GroupBox { Name = "groupbox" + i, Text = keys[i] };
                 string[] values = GetConfigValuesByKey(keys[i]);
                 int y = 0;
                 for (int j = 0; j < values.Length; j++)
@@ -61,7 +61,7 @@ namespace HostEditor
                     CheckBox cb = CreateCheckBox(150, gbHeight, new Point(j * 150 + 50, 20), values[j], values[j] + " " + keys[i]);
                     groubox.Controls.Add(cb);
                 }
-               panelGroupBoxes.Controls.Add(groubox);
+                panelGroupBoxes.Controls.Add(groubox);
                 panelGroupBoxes.Controls["groupbox" + i].Height = gbHeight + 50;
                 if (i == 0)
                 {
@@ -132,8 +132,31 @@ namespace HostEditor
 
         private void button1_Click(object sender, EventArgs e)
         {
+            string constr = ConfigurationManager.ConnectionStrings["hostpath"].ConnectionString; //host文件路径
+            string constrCommonHost = ConfigurationManager.ConnectionStrings["commonhost"].ConnectionString; //常用host路径
+            string stredit = "";
             string str = "";
             int count = 0;
+
+
+            if (!string.IsNullOrEmpty(constrCommonHost))
+            {
+                constrCommonHost = constrCommonHost.Trim();
+                if (constrCommonHost.IndexOf(',') != -1)
+                {
+                    string[] strings = constrCommonHost.Split(',');
+                    foreach (string s in strings)
+                    {
+                        str += (s + "\r\n");
+                    }
+                }
+                else
+                {
+                    str += (constrCommonHost.Trim() + "\r\n");
+                }
+                str += "####################\r\n";
+            }
+
             foreach (Control control in panelGroupBoxes.Controls)
             {
                 if (control is GroupBox)
@@ -147,6 +170,7 @@ namespace HostEditor
                             {
                                 count++;
                                 str += cb.Tag + "\r\n\r\n";
+                                stredit += cb.Tag + "\r\n\r\n";
                             }
                         }
                     }
@@ -154,12 +178,12 @@ namespace HostEditor
             }
             if (count > 0)
             {
-                DialogResult dr = MessageBox.Show("Host文件将会被以下内容覆盖：\r\n\r\n" + str, "操作确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                DialogResult dr = MessageBox.Show("Host文件将会被以下内容覆盖：\r\n\r\n" + stredit, "操作确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (dr == DialogResult.Yes)
                 {
                     try
                     {
-                        string constr = ConfigurationManager.ConnectionStrings["hostpath"].ConnectionString;
+
                         if (!string.IsNullOrEmpty(constr))
                         {
                             File.WriteAllText(constr, str, Encoding.ASCII);
@@ -179,7 +203,12 @@ namespace HostEditor
             }
             else
             {
-                MessageBox.Show("未检测到需要修改的Host信息,请勾选主机头所对应的IP", "操作提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                DialogResult dialogResult = MessageBox.Show("未检测到需要修改的信息，点击确定会清空当前host信息", "操作提示", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+                if (dialogResult == DialogResult.OK)
+                {
+                    File.WriteAllText(constr, str, Encoding.ASCII);
+                    MessageBox.Show("清空成功，重启浏览器生效", "操作提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
 
